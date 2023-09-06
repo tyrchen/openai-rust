@@ -1,4 +1,6 @@
 #![doc = include_str!("../README.md")]
+use std::env;
+
 use anyhow::{anyhow, Result};
 use futures_util::stream::Stream;
 use futures_util::StreamExt;
@@ -8,8 +10,12 @@ use reqwest;
 pub extern crate futures_util;
 
 lazy_static! {
-    static ref BASE_URL: reqwest::Url =
-        reqwest::Url::parse("https://api.openai.com/v1/models").unwrap();
+    static ref BASE_URL: reqwest::Url = {
+        let url = env::var("OPENAI_API_URL").unwrap_or("https://api.openai.com/v1/".to_owned());
+
+        let url = reqwest::Url::parse(&url).unwrap();
+        url
+    };
 }
 
 /// This is the main interface to interact with the api.
@@ -65,8 +71,7 @@ impl Client {
     ///
     /// See <https://platform.openai.com/docs/api-reference/models/list>.
     pub async fn list_models(&self) -> Result<Vec<models::Model>, anyhow::Error> {
-        let mut url = BASE_URL.clone();
-        url.set_path("/v1/models");
+        let url = BASE_URL.join("models")?;
 
         let res = self
             .req_client
@@ -105,8 +110,7 @@ impl Client {
         &self,
         args: chat::ChatArguments,
     ) -> Result<chat::ChatResponse, anyhow::Error> {
-        let mut url = BASE_URL.clone();
-        url.set_path("/v1/chat/completions");
+        let url = BASE_URL.join("chat/completions")?;
 
         let res = self
             .req_client
@@ -156,8 +160,7 @@ impl Client {
         &self,
         args: chat::ChatArguments,
     ) -> Result<impl Stream<Item = Result<Vec<chat::stream::ChatResponseEvent>>>> {
-        let mut url = BASE_URL.clone();
-        url.set_path("/v1/chat/completions");
+        let url = BASE_URL.join("chat/completions")?;
 
         // Enable streaming
         let mut args = args;
@@ -198,8 +201,7 @@ impl Client {
         &self,
         args: completions::CompletionArguments,
     ) -> Result<completions::CompletionResponse> {
-        let mut url = BASE_URL.clone();
-        url.set_path("/v1/completions");
+        let url = BASE_URL.join("completions")?;
 
         let res = self
             .req_client
@@ -232,8 +234,7 @@ impl Client {
     /// ```
     ///
     pub async fn create_edit(&self, args: edits::EditArguments) -> Result<edits::EditResponse> {
-        let mut url = BASE_URL.clone();
-        url.set_path("/v1/edits");
+        let url = BASE_URL.join("edits")?;
 
         let res = self
             .req_client
@@ -269,8 +270,7 @@ impl Client {
         &self,
         args: embeddings::EmbeddingsArguments,
     ) -> Result<embeddings::EmbeddingsResponse> {
-        let mut url = BASE_URL.clone();
-        url.set_path("/v1/embeddings");
+        let url = BASE_URL.join("embeddings")?;
 
         let res = self
             .req_client
